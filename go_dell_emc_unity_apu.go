@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -31,17 +34,26 @@ type UnityDataStorRest struct {
 }
 
 type Pool struct {
-	id string
+	Id string `json:"id"`
 }
 type NasServer struct {
-	id string
+	Id string `json:"id"`
 }
 
 type CreateFS struct {
-	pool               Pool
-	nasServer          NasServer
-	size               int
-	supportedProtocols int
+	Pool               Pool      `json:"pool"`
+	NasServer          NasServer `json:"nasServer"`
+	Size               int       `json:"size"`
+	SupportedProtocols int       `json:"supportedProtocols"`
+}
+type NFSShare struct {
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+type FS struct {
+	Name           string   `json:"name"`
+	FsParameters   CreateFS `json:"fsParameters "`
+	NfsShareCreate NFSShare `json:"nfsShareCreate "`
 }
 
 type CustomPublicSuffixList struct {
@@ -79,6 +91,10 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 		RestPassword: password}
 }
 
+func Gb_to_Bytes(g int) int {
+	return g * 1024 * 1024 * 1024
+}
+
 func (unity UnityDataStorRest) GetEMCSecureToken() string {
 	var emc_token string
 	u := fmt.Sprintf("https://%s/api/", unity.RestBaseUrl)
@@ -96,8 +112,46 @@ func (unity UnityDataStorRest) GetEMCSecureToken() string {
 	return emc_token
 }
 
+func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) {
+	poolJson := Pool{Id: pool_id}
+	nasJson := NasServer{Id: nas_id}
+	newFSData := CreateFS{Pool: poolJson,
+		NasServer:          nasJson,
+		Size:               Gb_to_Bytes(size),
+		SupportedProtocols: 0}
+
+	newNFSData := NFSShare{Name: name, Path: fmt.Sprintf("/%s", name)}
+	FSData := FS{Name: name,
+		FsParameters:   newFSData,
+		NfsShareCreate: newNFSData}
+	newFSJson, newJsonErr := json.Marshal(FSData)
+	if newJsonErr != nil {
+		log.Fatal(newJsonErr)
+	}
+	fmt.Printf("%s\n", newFSJson)
+	sec_token := unity.GetEMCSecureToken()
+	if len(sec_token) == 0 {
+		log.Fatal("Emthy EMC SECure token!!!")
+	}
+	fmt.Println(sec_token)
+	createUrl := fmt.Sprintf("https://%s/api/types/storageResource/action/createFilesystem", unity.RestBaseUrl)
+	createReq, req_err := http.NewRequest("POST", createUrl, bytes.NewReader(newFSJson))
+	if req_err != nil {
+		log.Fatal(req_err)
+	}
+	createReq.Header.Add("EMC-CSRF-TOKEN", sec_token)
+	resp, resp_err := unity.RestClient.Do(createReq)
+	if resp_err != nil {
+		log.Fatal(resp_err)
+	}
+	respData, _ := ioutil.ReadAll(resp.Body)
+	fmt.Printf("%s\n", respData)
+
+}
 func main() {
 	test_unity := NewUnityDataStore("192.168.130.87", "admin", "Qwe12345!")
-	test_unity.GetEMCSecureToken()
+	//_emc_token := test_unity.GetEMCSecureToken()
+	//fmt.Printf("%s", _emc_token)
+	test_unity.CreateFS("ocp_pv_01", poolId, nasId, 4)
 
 }
