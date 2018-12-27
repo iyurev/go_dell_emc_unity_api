@@ -41,9 +41,11 @@ type NasServer struct {
 }
 
 type CreateFS struct {
+	Name               string    `json:"name"`
 	Pool               Pool      `json:"pool"`
 	NasServer          NasServer `json:"nasServer"`
-	Size               int       `json:"size"`
+	SizeTotal          int       `json:"sizeTotal"`
+	SizeAllocated      int       `json:"sizeAllocated"`
 	SupportedProtocols int       `json:"supportedProtocols"`
 }
 type NFSShare struct {
@@ -117,7 +119,8 @@ func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) 
 	nasJson := NasServer{Id: nas_id}
 	newFSData := CreateFS{Pool: poolJson,
 		NasServer:          nasJson,
-		Size:               Gb_to_Bytes(size),
+		SizeAllocated:      Gb_to_Bytes(size),
+		SizeTotal:          Gb_to_Bytes(size),
 		SupportedProtocols: 0}
 
 	newNFSData := NFSShare{Name: name, Path: fmt.Sprintf("/%s", name)}
