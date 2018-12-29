@@ -40,22 +40,21 @@ type NasServer struct {
 	Id string `json:"id"`
 }
 
-type CreateFS struct {
-	Name               string    `json:"name"`
-	Pool               Pool      `json:"pool"`
-	NasServer          NasServer `json:"nasServer"`
-	SizeTotal          int       `json:"sizeTotal"`
-	SizeAllocated      int       `json:"sizeAllocated"`
-	SupportedProtocols int       `json:"supportedProtocols"`
+type FilesystemParameters struct {
+	Pool      Pool      `json:"pool"`
+	NasServer NasServer `json:"nasServer"`
+	//SizeAllocated      int       `json:"sizeAllocated"`
+	Size               int `json:"size"`
+	SupportedProtocols int `json:"supportedProtocols"`
 }
-type NFSShare struct {
+type NfsShareCreate struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 }
-type FS struct {
-	Name           string   `json:"name"`
-	FsParameters   CreateFS `json:"fsParameters "`
-	NfsShareCreate NFSShare `json:"nfsShareCreate "`
+type CreateFileSystem struct {
+	Name         string               `json:"name"`
+	FsParameters FilesystemParameters `json:"fsParameters "`
+	//	NfsShareCreate []NfsShareCreate       `json:"nfsShareCreate "`
 }
 
 type CustomPublicSuffixList struct {
@@ -117,16 +116,23 @@ func (unity UnityDataStorRest) GetEMCSecureToken() string {
 func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) {
 	poolJson := Pool{Id: pool_id}
 	nasJson := NasServer{Id: nas_id}
-	newFSData := CreateFS{Pool: poolJson,
-		NasServer:          nasJson,
-		SizeAllocated:      Gb_to_Bytes(size),
-		SizeTotal:          Gb_to_Bytes(size),
+
+	newFSData := FilesystemParameters{
+		Pool:      poolJson,
+		Size:      Gb_to_Bytes(size),
+		NasServer: nasJson,
+		//SizeAllocated:      Gb_to_Bytes(size),
 		SupportedProtocols: 0}
 
-	newNFSData := NFSShare{Name: name, Path: fmt.Sprintf("/%s", name)}
-	FSData := FS{Name: name,
-		FsParameters:   newFSData,
-		NfsShareCreate: newNFSData}
+	//newNFSData := NfsShareCreate{
+	//	Name: name,
+	//	Path: fmt.Sprintf("/%s", name)}
+
+	FSData := CreateFileSystem{
+		Name:         name,
+		FsParameters: newFSData}
+	//NfsShareCreate: []NfsShareCreate{newNFSData}}
+
 	newFSJson, newJsonErr := json.Marshal(FSData)
 	if newJsonErr != nil {
 		log.Fatal(newJsonErr)
@@ -137,11 +143,12 @@ func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) 
 		log.Fatal("Emthy EMC SECure token!!!")
 	}
 	fmt.Println(sec_token)
-	createUrl := fmt.Sprintf("https://%s/api/types/storageResource/action/createFilesystem", unity.RestBaseUrl)
+	createUrl := fmt.Sprintf("https://%s/api/types/storageResource/action/createFilesystem/", unity.RestBaseUrl)
 	createReq, req_err := http.NewRequest("POST", createUrl, bytes.NewReader(newFSJson))
 	if req_err != nil {
 		log.Fatal(req_err)
 	}
+	createReq.Header = unity.RestHeaders
 	createReq.Header.Add("EMC-CSRF-TOKEN", sec_token)
 	resp, resp_err := unity.RestClient.Do(createReq)
 	if resp_err != nil {
