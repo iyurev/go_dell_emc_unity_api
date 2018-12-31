@@ -172,6 +172,7 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 		log.Fatal(resp_err)
 	}
 	respData, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	fmt.Printf("%s\n", respData)
 }
 
@@ -184,6 +185,7 @@ func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) {
 	}
 	req.Header = unity.RestHeaders
 	r, r_err := unity.RestClient.Do(req)
+	//defer r.Body.Close()
 	if req_err != nil {
 		log.Fatal(r_err)
 	}
