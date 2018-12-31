@@ -30,7 +30,6 @@ type UnityDataStorRest struct {
 	RestPassword  string
 	RestCSRFToken string
 }
-
 type Pool struct {
 	Id string `json:"id"`
 }
@@ -183,5 +182,11 @@ func (unity UnityDataStorRest) DeleteFSwithNFSExport(name string) {
 		log.Fatal(req_err)
 	}
 	req.Header = unity.RestHeaders
+
+	resp, resp_err := unity.RestClient.Do(req)
+	if req_err != nil {
+		log.Fatal(resp_err)
+	}
+	fmt.Printf("%d\n", resp.StatusCode)
 
 }
