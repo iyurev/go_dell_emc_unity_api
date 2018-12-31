@@ -59,7 +59,7 @@ type FilesystemParameters struct {
 type CreateFileSystem struct {
 	Name           string               `json:"name"`
 	FsParameters   FilesystemParameters `json:"fsParameters"`
-	NfsShareCreate []NfsShareCreate     `json:"nfsShareCreate "`
+	NfsShareCreate []NfsShareCreate     `json:"nfsShareCreate"`
 }
 
 type CustomPublicSuffixList struct {
