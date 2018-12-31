@@ -1,4 +1,8 @@
-package main
+/*
+Simple library for work with DELL EMC Unity Web REST API
+
+*/
+package unity_api
 
 import (
 	"bytes"
@@ -13,17 +17,9 @@ import (
 )
 
 const apiPath = "/api"
-const createFSpath = "/types/storageResource/action/createFilesystem"
+const createFSpath = "/api/types/storageResource/action/createFilesystem"
 
-var BaseUrl string = "192.168.130.87"
-var SecureConn bool = true
-
-//////////////////////////////
-var poolId string = "pool_1"
-var nasId string = "nas_1"
-
-var RestUser string = "admin"
-var RestPassw = "Qwe12345!"
+const defaultLocalPath = "/"
 
 type UnityDataStorRest struct {
 	RestClient   http.Client
@@ -39,22 +35,31 @@ type Pool struct {
 type NasServer struct {
 	Id string `json:"id"`
 }
+type rootAccessHost struct {
+	Id string `json:"id"`
+}
+
+type NfsShareParameters struct {
+	rootAccessHosts []rootAccessHost
+}
+
+type NfsShareCreate struct {
+	Name               string             `json:"name"`
+	Path               string             `json:"path"`
+	NfsShareParameters NfsShareParameters `json:"nfsShareParameters"`
+}
 
 type FilesystemParameters struct {
-	Pool      Pool      `json:"pool"`
-	NasServer NasServer `json:"nasServer"`
-	//SizeAllocated      int       `json:"sizeAllocated"`
-	Size               int `json:"size"`
-	SupportedProtocols int `json:"supportedProtocols"`
+	Pool               Pool      `json:"pool"`
+	NasServer          NasServer `json:"nasServer"`
+	Size               int       `json:"size"`
+	SupportedProtocols int       `json:"supportedProtocols"`
 }
-type NfsShareCreate struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-}
+
 type CreateFileSystem struct {
-	Name         string               `json:"name"`
-	FsParameters FilesystemParameters `json:"fsParameters"`
-	//	NfsShareCreate []NfsShareCreate       `json:"nfsShareCreate "`
+	Name           string               `json:"name"`
+	FsParameters   FilesystemParameters `json:"fsParameters"`
+	NfsShareCreate []NfsShareCreate     `json:"nfsShareCreate "`
 }
 
 type CustomPublicSuffixList struct {
@@ -113,25 +118,36 @@ func (unity UnityDataStorRest) GetEMCSecureToken() string {
 	return emc_token
 }
 
-func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) {
+//Create Filesystem and NFS export for heir
+func (unity UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int) {
+	if localpath == "" {
+		localpath = defaultLocalPath
+	}
+	//Assign access host id from input arguments
+	accessHost := rootAccessHost{Id: root_access_host_id}
+	//Assign root access parameters to new NFS share parameters
+	nfsParameters := NfsShareParameters{
+		rootAccessHosts: []rootAccessHost{accessHost}}
+	//NFS export parameters
+	newNFSData := NfsShareCreate{
+		Name:               name,
+		Path:               localpath,
+		NfsShareParameters: nfsParameters}
+	//Pool ID
 	poolJson := Pool{Id: pool_id}
+	//Nas server ID
 	nasJson := NasServer{Id: nas_id}
-
+	//New Filesystem parameters
 	newFSData := FilesystemParameters{
-		Pool:      poolJson,
-		Size:      Gb_to_Bytes(size),
-		NasServer: nasJson,
-		//SizeAllocated:      Gb_to_Bytes(size),
+		Pool:               poolJson,
+		Size:               Gb_to_Bytes(size),
+		NasServer:          nasJson,
 		SupportedProtocols: 0}
-
-	//newNFSData := NfsShareCreate{
-	//	Name: name,
-	//	Path: fmt.Sprintf("/%s", name)}
-
+	//Complete Filesystem request body data
 	FSData := CreateFileSystem{
-		Name:         name,
-		FsParameters: newFSData}
-	//NfsShareCreate: []NfsShareCreate{newNFSData}}
+		Name:           name,
+		FsParameters:   newFSData,
+		NfsShareCreate: []NfsShareCreate{newNFSData}}
 
 	newFSJson, newJsonErr := json.Marshal(FSData)
 	if newJsonErr != nil {
@@ -142,8 +158,7 @@ func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) 
 	if len(sec_token) == 0 {
 		log.Fatal("Emthy EMC SECure token!!!")
 	}
-	fmt.Println(sec_token)
-	createUrl := fmt.Sprintf("https://%s/api/types/storageResource/action/createFilesystem/", unity.RestBaseUrl)
+	createUrl := fmt.Sprintf("https://%s%s", unity.RestBaseUrl, createFSpath)
 	createReq, req_err := http.NewRequest("POST", createUrl, bytes.NewReader(newFSJson))
 	if req_err != nil {
 		log.Fatal(req_err)
@@ -156,12 +171,5 @@ func (unity UnityDataStorRest) CreateFS(name, pool_id, nas_id string, size int) 
 	}
 	respData, _ := ioutil.ReadAll(resp.Body)
 	fmt.Printf("%s\n", respData)
-
-}
-func main() {
-	test_unity := NewUnityDataStore("192.168.130.87", "admin", "Qwe12345!")
-	//_emc_token := test_unity.GetEMCSecureToken()
-	//fmt.Printf("%s", _emc_token)
-	test_unity.CreateFS("ocp_pv_01", poolId, nasId, 4)
 
 }
