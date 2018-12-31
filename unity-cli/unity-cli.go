@@ -18,7 +18,7 @@ func main() {
 	test_unity := unity_api.NewUnityDataStore("192.168.130.87", "admin", "Qwe12345!")
 	//_emc_token := test_unity.GetEMCSecureToken()
 	//fmt.Printf("%s", _emc_token)
-	//test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", root_access_hosts, 4)
-	test_unity.DeleteFSwithNFSExport(demoPVName)
+	test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", root_access_hosts, 4)
+	//test_unity.DeleteFSwithNFSExport(demoPVName)
 
 }

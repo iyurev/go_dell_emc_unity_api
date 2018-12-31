@@ -81,7 +81,7 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 	if e != nil {
 		log.Fatal(e)
 	}
-	_client := http.Client{Transport: insecureTransport, CheckRedirect: nil, Jar: cookieJar}
+	_client := http.Client{Transport: insecureTransport, Jar: cookieJar}
 	authStr := fmt.Sprintf("%s:%s", username, password)
 	_auth_base64 := base64.StdEncoding.EncodeToString([]byte(authStr))
 	_basic_auth := fmt.Sprintf("Basic %s", _auth_base64)
@@ -90,13 +90,10 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 	_headers.Add("Accept", "application/json")
 	_headers.Add("Content-Type", "application/json")
 	_headers.Add("Authorization", _basic_auth)
-	csrf_token := GetEMCSecureToken(baseurl, _headers, _client)
-	if len(csrf_token) == 0 {
-		log.Fatal("Can't get CSRF Token!!!!")
-	}
-	_headers.Add("EMC-CSRF-TOKEN", csrf_token)
-	return &UnityDataStorRest{RestClient: _client,
-		//RestClientCookie: &_cookie,
+	csrf_token := GetEMCSecureToken(baseurl, &_headers, &_client)
+
+	return &UnityDataStorRest{
+		RestClient:    _client,
 		RestHeaders:   _headers,
 		RestBaseUrl:   baseurl,
 		RestUsername:  username,
@@ -108,12 +105,12 @@ func Gb_to_Bytes(g int) int {
 	return g * 1024 * 1024 * 1024
 }
 
-func GetEMCSecureToken(url string, headers http.Header, client http.Client) string {
+func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) string {
 	var emc_token string
 	u := fmt.Sprintf("https://%s/api/", url)
 	fmt.Printf("%s\n", u)
 	getTokenReq, newReqErr := http.NewRequest("GET", u, nil)
-	getTokenReq.Header = headers
+	getTokenReq.Header = *headers
 	if newReqErr != nil {
 		log.Fatal(newReqErr)
 	}
@@ -122,6 +119,10 @@ func GetEMCSecureToken(url string, headers http.Header, client http.Client) stri
 		log.Fatal(respErr)
 	}
 	emc_token = resp.Header.Get("Emc-Csrf-Token")
+	if len(emc_token) == 0 {
+		log.Fatal("Can't get CSRF Token!!!!")
+	}
+	headers.Add("EMC-CSRF-TOKEN", emc_token)
 	return emc_token
 }
 
@@ -177,18 +178,18 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 }
 
 func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) {
-	url := fmt.Sprintf("%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
+	url := fmt.Sprintf("https://%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
 	fmt.Printf("%s\n", url)
 	req, req_err := http.NewRequest("DELETE", url, nil)
 	if req_err != nil {
 		log.Fatal(req_err)
 	}
 	req.Header = unity.RestHeaders
-	r, r_err := unity.RestClient.Do(req)
-	//defer r.Body.Close()
-	if req_err != nil {
-		log.Fatal(r_err)
+	resp, resp_err := unity.RestClient.Do(req)
+	if resp_err != nil {
+		log.Fatal(resp_err)
 	}
-	fmt.Printf("%d\n", r.StatusCode)
+	defer resp.Body.Close()
+	fmt.Printf("%d\n", resp.StatusCode)
 
 }
