@@ -40,7 +40,7 @@ type rootAccessHost struct {
 }
 
 type NfsShareParameters struct {
-	rootAccessHosts []rootAccessHost
+	RootAccessHosts []rootAccessHost `json:"rootAccessHosts"`
 }
 
 type NfsShareCreate struct {
@@ -127,7 +127,7 @@ func (unity UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loca
 	accessHost := rootAccessHost{Id: root_access_host_id}
 	//Assign root access parameters to new NFS share parameters
 	nfsParameters := NfsShareParameters{
-		rootAccessHosts: []rootAccessHost{accessHost}}
+		RootAccessHosts: []rootAccessHost{accessHost}}
 	//NFS export parameters
 	newNFSData := NfsShareCreate{
 		Name:               name,
