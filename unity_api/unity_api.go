@@ -18,15 +18,17 @@ import (
 
 const apiPath = "/api"
 const createFSpath = "/api/types/storageResource/action/createFilesystem"
+const deleteFSpath = "/api/instances/storageResource/name:"
 
 const defaultLocalPath = "/"
 
 type UnityDataStorRest struct {
-	RestClient   http.Client
-	RestHeaders  http.Header
-	RestBaseUrl  string
-	RestUsername string
-	RestPassword string
+	RestClient    http.Client
+	RestHeaders   http.Header
+	RestBaseUrl   string
+	RestUsername  string
+	RestPassword  string
+	RestCSRFToken string
 }
 
 type Pool struct {
@@ -89,28 +91,34 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 	_headers.Add("Accept", "application/json")
 	_headers.Add("Content-Type", "application/json")
 	_headers.Add("Authorization", _basic_auth)
+	csrf_token := GetEMCSecureToken(baseurl, _headers, _client)
+	if len(csrf_token) == 0 {
+		log.Fatal("Can't get CSRF Token!!!!")
+	}
+	_headers.Add("EMC-CSRF-TOKEN", csrf_token)
 	return &UnityDataStorRest{RestClient: _client,
 		//RestClientCookie: &_cookie,
-		RestHeaders:  _headers,
-		RestBaseUrl:  baseurl,
-		RestUsername: username,
-		RestPassword: password}
+		RestHeaders:   _headers,
+		RestBaseUrl:   baseurl,
+		RestUsername:  username,
+		RestPassword:  password,
+		RestCSRFToken: csrf_token}
 }
 
 func Gb_to_Bytes(g int) int {
 	return g * 1024 * 1024 * 1024
 }
 
-func (unity UnityDataStorRest) GetEMCSecureToken() string {
+func GetEMCSecureToken(url string, headers http.Header, client http.Client) string {
 	var emc_token string
-	u := fmt.Sprintf("https://%s/api/", unity.RestBaseUrl)
+	u := fmt.Sprintf("https://%s/api/", url)
 	fmt.Printf("%s\n", u)
 	getTokenReq, newReqErr := http.NewRequest("GET", u, nil)
-	getTokenReq.Header = unity.RestHeaders
+	getTokenReq.Header = headers
 	if newReqErr != nil {
 		log.Fatal(newReqErr)
 	}
-	resp, respErr := unity.RestClient.Do(getTokenReq)
+	resp, respErr := client.Do(getTokenReq)
 	if respErr != nil {
 		log.Fatal(respErr)
 	}
@@ -154,22 +162,26 @@ func (unity UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loca
 		log.Fatal(newJsonErr)
 	}
 	fmt.Printf("%s\n", newFSJson)
-	sec_token := unity.GetEMCSecureToken()
-	if len(sec_token) == 0 {
-		log.Fatal("Emthy EMC SECure token!!!")
-	}
 	createUrl := fmt.Sprintf("https://%s%s", unity.RestBaseUrl, createFSpath)
 	createReq, req_err := http.NewRequest("POST", createUrl, bytes.NewReader(newFSJson))
 	if req_err != nil {
 		log.Fatal(req_err)
 	}
 	createReq.Header = unity.RestHeaders
-	createReq.Header.Add("EMC-CSRF-TOKEN", sec_token)
 	resp, resp_err := unity.RestClient.Do(createReq)
 	if resp_err != nil {
 		log.Fatal(resp_err)
 	}
 	respData, _ := ioutil.ReadAll(resp.Body)
 	fmt.Printf("%s\n", respData)
+}
+
+func (unity UnityDataStorRest) DeleteFSwithNFSExport(name string) {
+	url := fmt.Sprintf("%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
+	req, req_err := http.NewRequest("DELETE", url, nil)
+	if req_err != nil {
+		log.Fatal(req_err)
+	}
+	req.Header = unity.RestHeaders
 
 }
