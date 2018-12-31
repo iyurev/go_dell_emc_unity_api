@@ -1,1 +1,2 @@
 {"name":"ocp_pv_01","fsParameters":{"pool":{"id":"pool_1"},"nasServer":{"id":"nas_1"},"size":4294967296,"supportedProtocols":0},"nfsShareCreate":[{"path":"/","name":"ocp_pv_01","nfsShareParameters":{"rootAccessHosts":[{"id":"Subnet_6"}]}}]}
+{"name":"ocp_pv_01","fsParameters":{"pool":{"id":"pool_1"},"nasServer":{"id":"nas_1"},"size":4294967296,"supportedProtocols":0},"nfsShareCreate":[{"name":"ocp_pv_01","path":"/","nfsShareParameters":{"rootAccessHosts":[{"id":"Subnet_6"}]}}]}
