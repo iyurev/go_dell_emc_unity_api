@@ -183,7 +183,7 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 
 }
 
-func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) {
+func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) error {
 	url := fmt.Sprintf("https://%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
 	fmt.Printf("%s\n", url)
 	req, req_err := http.NewRequest("DELETE", url, nil)
@@ -195,7 +195,14 @@ func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) {
 	if resp_err != nil {
 		log.Fatal(resp_err)
 	}
-	defer resp.Body.Close()
-	fmt.Printf("%d\n", resp.StatusCode)
+	if !ok_status_code(resp.StatusCode) {
+		defer resp.Body.Close()
+		respData, read_resp_err := ioutil.ReadAll(resp.Body)
+		if read_resp_err != nil {
+			log.Fatal(read_resp_err)
+		}
+		return NewRestErr(respData, resp.StatusCode)
+	}
+	return nil
 
 }
