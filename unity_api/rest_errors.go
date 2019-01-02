@@ -22,5 +22,5 @@ func NewRestErr(b []byte, s int) *RestErr {
 }
 
 func (re *RestErr) Error() string {
-	return fmt.Sprintf("Unity REST API ERROR!! Response code:  %s, Response body: %s\n", re.StatusCode, re.RespBody)
+	return fmt.Sprintf("Unity REST API ERROR!! Response code:  %d, Response body: %s\n", re.StatusCode, re.RespBody)
 }
