@@ -127,7 +127,7 @@ func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) st
 }
 
 //Create Filesystem and NFS export for heir
-func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int) {
+func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int) error {
 	if localpath == "" {
 		localpath = defaultLocalPath
 	}
@@ -168,13 +168,19 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 		log.Fatal(req_err)
 	}
 	createReq.Header = unity.RestHeaders
+	//Do create request
 	resp, resp_err := unity.RestClient.Do(createReq)
 	if resp_err != nil {
 		log.Fatal(resp_err)
 	}
-	respData, _ := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-	fmt.Printf("%s\n", respData)
+	if !ok_status_code(resp.StatusCode) {
+		defer resp.Body.Close()
+		respData, _ := ioutil.ReadAll(resp.Body)
+		return NewRestErr(respData, resp.StatusCode)
+
+	}
+	return nil
+
 }
 
 func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) {
