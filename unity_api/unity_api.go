@@ -53,7 +53,7 @@ type NfsShareCreate struct {
 type FilesystemParameters struct {
 	Pool               Pool      `json:"pool"`
 	NasServer          NasServer `json:"nasServer"`
-	Size               int       `json:"size"`
+	Size               int64     `json:"size"`
 	SupportedProtocols int       `json:"supportedProtocols"`
 }
 
@@ -101,6 +101,7 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 		RestCSRFToken: csrf_token}
 }
 
+//Convert Gb size to Bytes
 func Gb_to_Bytes(g int) int {
 	return g * 1024 * 1024 * 1024
 }
@@ -127,7 +128,7 @@ func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) st
 }
 
 //Create Filesystem and NFS export for heir
-func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int) error {
+func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int64) error {
 	if localpath == "" {
 		localpath = defaultLocalPath
 	}
@@ -148,7 +149,7 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 	//New Filesystem parameters
 	newFSData := FilesystemParameters{
 		Pool:               poolJson,
-		Size:               Gb_to_Bytes(size),
+		Size:               size,
 		NasServer:          nasJson,
 		SupportedProtocols: 0}
 	//Complete Filesystem request body data
