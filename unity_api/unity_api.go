@@ -102,8 +102,8 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 }
 
 //Convert Gb size to Bytes
-func Gb_to_Bytes(g int) int {
-	return g * 1024 * 1024 * 1024
+func Gb_to_Bytes(g int) int64 {
+	return int64(g * 1024 * 1024 * 1024)
 }
 
 func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) string {

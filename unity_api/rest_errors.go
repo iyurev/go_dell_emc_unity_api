@@ -12,6 +12,7 @@ func ok_status_code(status_code int) bool {
 	success_status_codes[200] = true
 	success_status_codes[202] = true
 	success_status_codes[204] = true
+	success_status_codes[409] = true
 	if _, ok := success_status_codes[status_code]; ok {
 		return true
 	}
