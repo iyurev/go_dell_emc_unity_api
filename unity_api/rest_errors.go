@@ -7,17 +7,16 @@ type RestErr struct {
 	StatusCode int
 }
 
-func ok_status_code(status_code int) bool {
-	success_status_codes := make(map[int]bool)
-	success_status_codes[200] = true
-	success_status_codes[202] = true
-	success_status_codes[204] = true
-	success_status_codes[409] = true
-	if _, ok := success_status_codes[status_code]; ok {
-		return true
+func OKStatusCode(status_code int) bool {
+	success_codes := []int{200, 202, 204}
+	for _, ok := range success_codes {
+		if status_code == ok {
+			return true
+		}
 	}
 	return false
 }
+
 func NewRestErr(b []byte, s int) *RestErr {
 	return &RestErr{RespBody: b, StatusCode: s}
 }

@@ -22,6 +22,12 @@ const deleteFSpath = "/api/instances/storageResource/name:"
 
 const defaultLocalPath = "/"
 
+//Response structure, contain request and response data
+type Resp struct {
+	RequestData []byte
+	RespData    []byte
+}
+
 type UnityDataStorRest struct {
 	RestClient    http.Client
 	RestHeaders   http.Header
@@ -106,6 +112,7 @@ func Gb_to_Bytes(g int) int64 {
 	return int64(g * 1024 * 1024 * 1024)
 }
 
+//Get EMC-CSRF-TOKEN and add to Headers
 func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) string {
 	var emc_token string
 	u := fmt.Sprintf("https://%s/api/", url)
@@ -128,7 +135,7 @@ func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) st
 }
 
 //Create Filesystem and NFS export for heir
-func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int64) error {
+func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int64) (Resp, error) {
 	if localpath == "" {
 		localpath = defaultLocalPath
 	}
@@ -162,7 +169,6 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 	if newJsonErr != nil {
 		log.Fatal(newJsonErr)
 	}
-	fmt.Printf("%s\n", newFSJson)
 	createUrl := fmt.Sprintf("https://%s%s", unity.RestBaseUrl, createFSpath)
 	createReq, req_err := http.NewRequest("POST", createUrl, bytes.NewReader(newFSJson))
 	if req_err != nil {
@@ -174,17 +180,20 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 	if resp_err != nil {
 		log.Fatal(resp_err)
 	}
-	if !ok_status_code(resp.StatusCode) {
-		defer resp.Body.Close()
-		respData, _ := ioutil.ReadAll(resp.Body)
-		return NewRestErr(respData, resp.StatusCode)
-
+	defer resp.Body.Close()
+	respData, resp_err := ioutil.ReadAll(resp.Body)
+	if resp_err != nil {
+		log.Fatal(resp_err)
 	}
-	return nil
+	if !OKStatusCode(resp.StatusCode) {
+		return Resp{}, NewRestErr(respData, resp.StatusCode)
+	}
+	return Resp{RequestData: newFSJson, RespData: respData}, nil
 
 }
 
-func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) error {
+//Delete Filesystem with shares
+func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) (Resp, error) {
 	url := fmt.Sprintf("https://%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
 	fmt.Printf("%s\n", url)
 	req, req_err := http.NewRequest("DELETE", url, nil)
@@ -196,14 +205,15 @@ func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) error {
 	if resp_err != nil {
 		log.Fatal(resp_err)
 	}
-	if !ok_status_code(resp.StatusCode) {
-		defer resp.Body.Close()
-		respData, read_resp_err := ioutil.ReadAll(resp.Body)
-		if read_resp_err != nil {
-			log.Fatal(read_resp_err)
-		}
-		return NewRestErr(respData, resp.StatusCode)
+	defer resp.Body.Close()
+	respData, read_resp_err := ioutil.ReadAll(resp.Body)
+	if read_resp_err != nil {
+		log.Fatal(read_resp_err)
 	}
-	return nil
+	if !OKStatusCode(resp.StatusCode) {
+
+		return Resp{}, NewRestErr(respData, resp.StatusCode)
+	}
+	return Resp{RequestData: nil, RespData: respData}, nil
 
 }

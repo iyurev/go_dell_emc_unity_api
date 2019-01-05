@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/iyurev/go_dell_emc_unity_api/unity_api"
 	"log"
 )
@@ -18,13 +19,16 @@ var RestUser string = "admin"
 var RestPassw = "Qwe12345!"
 
 func main() {
-	test_unity := unity_api.NewUnityDataStore("192.168.130.87", "admin", "Qwe12345!")
-	//_emc_token := test_unity.GetEMCSecureToken()
-	//fmt.Printf("%s", _emc_token)
-	new_vol_err := test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", root_access_hosts, unity_api.Gb_to_Bytes(10))
-	if new_vol_err != nil {
-		log.Fatal(new_vol_err)
-	}
-	//test_unity.DeleteFSwithNFSExport(demoPVName)
+	//test_unity := unity_api.NewUnityDataStore("192.168.130.87", "admin", "Qwe12345!")
+	//resp, new_vol_err := test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", root_access_hosts, unity_api.Gb_to_Bytes(10))
+	//if new_vol_err != nil {
+	//	log.Fatal(new_vol_err)
+	//}
+	//fmt.Printf("%s      %s\n", resp.RequestData,  resp.RespData)
+
+	sc := 202
+	fmt.Printf("%+b\n", unity_api.OKStatusCode(sc))
+	test_event := "Test event from REST!!"
+	log.Printf("%s\n", test_event)
 
 }
