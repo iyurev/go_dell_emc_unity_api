@@ -80,7 +80,7 @@ func (c CustomPublicSuffixList) String() string {
 	return "local Unity REST API"
 }
 
-func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
+func NewUnityDataStore(baseurl, username, password string) (*UnityDataStorRest, error) {
 	insecureTransport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	s := &CustomPublicSuffixList{}
 	cookieJar, e := cookiejar.New(&cookiejar.Options{PublicSuffixList: s})
@@ -96,7 +96,10 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 	_headers.Add("Accept", "application/json")
 	_headers.Add("Content-Type", "application/json")
 	_headers.Add("Authorization", _basic_auth)
-	csrf_token := GetEMCSecureToken(baseurl, &_headers, &_client)
+	csrf_token, err := GetEMCSecureToken(baseurl, &_headers, &_client)
+	if err != nil {
+		return &UnityDataStorRest{}, fmt.Errorf("Can't create UnityRest object!!")
+	}
 
 	return &UnityDataStorRest{
 		RestClient:    _client,
@@ -104,7 +107,7 @@ func NewUnityDataStore(baseurl, username, password string) *UnityDataStorRest {
 		RestBaseUrl:   baseurl,
 		RestUsername:  username,
 		RestPassword:  password,
-		RestCSRFToken: csrf_token}
+		RestCSRFToken: csrf_token}, nil
 }
 
 //Convert Gb size to Bytes
@@ -113,7 +116,7 @@ func Gb_to_Bytes(g int) int64 {
 }
 
 //Get EMC-CSRF-TOKEN and add to Headers
-func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) string {
+func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) (string, error) {
 	var emc_token string
 	u := fmt.Sprintf("https://%s/api/", url)
 	fmt.Printf("%s\n", u)
@@ -128,10 +131,11 @@ func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) st
 	}
 	emc_token = resp.Header.Get("Emc-Csrf-Token")
 	if len(emc_token) == 0 {
-		log.Fatal("Can't get CSRF Token!!!!")
+		return "", fmt.Errorf("%s", "Empthy CSRF token!!")
 	}
 	headers.Add("EMC-CSRF-TOKEN", emc_token)
-	return emc_token
+	return emc_token, nil
+
 }
 
 //Create Filesystem and NFS export for heir
