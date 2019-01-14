@@ -37,17 +37,20 @@ type UnityDataStorRest struct {
 	RestCSRFToken string
 }
 type Pool struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 type NasServer struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
-type rootAccessHost struct {
-	Id string `json:"id"`
+type Host struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type NfsShareParameters struct {
-	RootAccessHosts []rootAccessHost `json:"rootAccessHosts"`
+	RootAccessHosts []Host `json:"rootAccessHosts"`
 }
 
 type NfsShareCreate struct {
@@ -119,7 +122,6 @@ func Gb_to_Bytes(g int) int64 {
 func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) (string, error) {
 	var emc_token string
 	u := fmt.Sprintf("https://%s/api/", url)
-	fmt.Printf("%s\n", u)
 	getTokenReq, newReqErr := http.NewRequest("GET", u, nil)
 	getTokenReq.Header = *headers
 	if newReqErr != nil {
@@ -139,24 +141,32 @@ func GetEMCSecureToken(url string, headers *http.Header, client *http.Client) (s
 }
 
 //Create Filesystem and NFS export for heir
-func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, localpath, root_access_host_id string, size int64) (Resp, error) {
+func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_name, nas_name, localpath string, root_access_hosts []string, size int64) (Resp, error) {
 	if localpath == "" {
 		localpath = defaultLocalPath
 	}
 	//Assign access host id from input arguments
-	accessHost := rootAccessHost{Id: root_access_host_id}
+	if len(root_access_hosts) == 0 {
+		log.Fatal("Emthy root access hosts list!!")
+	}
+	hosts := []Host{}
+	for _, v := range root_access_hosts {
+		host := Host{Name: v}
+		hosts = append(hosts, host)
+	}
 	//Assign root access parameters to new NFS share parameters
 	nfsParameters := NfsShareParameters{
-		RootAccessHosts: []rootAccessHost{accessHost}}
+		RootAccessHosts: hosts,
+	}
 	//NFS export parameters
 	newNFSData := NfsShareCreate{
 		Name:               name,
 		Path:               localpath,
 		NfsShareParameters: nfsParameters}
 	//Pool ID
-	poolJson := Pool{Id: pool_id}
+	poolJson := Pool{Name: pool_name}
 	//Nas server ID
-	nasJson := NasServer{Id: nas_id}
+	nasJson := NasServer{Name: nas_name}
 	//New Filesystem parameters
 	newFSData := FilesystemParameters{
 		Pool:               poolJson,
@@ -199,7 +209,6 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_id, nas_id, loc
 //Delete Filesystem with shares
 func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) (Resp, error) {
 	url := fmt.Sprintf("https://%s/%s%s", unity.RestBaseUrl, deleteFSpath, name)
-	fmt.Printf("%s\n", url)
 	req, req_err := http.NewRequest("DELETE", url, nil)
 	if req_err != nil {
 		log.Fatal(req_err)

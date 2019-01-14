@@ -10,9 +10,15 @@ var BaseUrl string = "192.168.130.87"
 var SecureConn bool = true
 
 //////////////////////////////
-var poolId string = "pool_1"
-var nasId string = "nas_1"
-var root_access_hosts = "Subnet_6"
+var poolId string = "main"
+
+//"pool_1"
+var nasId string = "nas-001"
+
+//"nas_1"
+var root_access_hosts = "test_ocp_cluster"
+
+//"Subnet_6"
 var demoPVName string = "ocp_pv_02"
 
 var RestUser string = "admin"
@@ -23,7 +29,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	resp, new_vol_err := test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", root_access_hosts, unity_api.Gb_to_Bytes(10))
+	access_hosts := []string{root_access_hosts, "prod_ocp_cluster"}
+
+	resp, new_vol_err := test_unity.CreateFSwithNFSExport(demoPVName, poolId, nasId, "", access_hosts, unity_api.Gb_to_Bytes(10))
 	if new_vol_err != nil {
 		log.Fatal(new_vol_err)
 	}
