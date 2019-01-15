@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/iyurev/go_dell_emc_unity_api/unity_api"
 	"log"
+	"regexp"
+	"strings"
 )
 
 func emthyArg(arg *string) bool {
@@ -12,6 +14,21 @@ func emthyArg(arg *string) bool {
 		return true
 	}
 	return false
+}
+
+func sliceFromArg(arg string) []string {
+	res_slice := []string{}
+	raw_list := strings.Split(arg, ",")
+	reg, e := regexp.Compile("[\t\n\f\r ]")
+	if e != nil {
+		log.Fatal(e)
+	}
+	for _, s := range raw_list {
+		str := reg.ReplaceAllString(s, "")
+		res_slice = append(res_slice, str)
+
+	}
+	return res_slice
 }
 
 func main() {
@@ -33,13 +50,16 @@ func main() {
 		}
 		if *create_nfs_volume {
 			if !emthyArg(pool_name) && !emthyArg(nas_name) && !emthyArg(vol_name) && !emthyArg(access_hosts) && *vol_size != 0 {
-				unity_access_hosts := []string{}
-				res, create_err := unity_ds.CreateFSwithNFSExport(*vol_name, *pool_name, *nas_name, "", unity_access_hosts, unity_api.Gb_to_Bytes(*vol_size))
-				if create_err != nil {
-					log.Fatal(create_err)
+				unity_access_hosts := sliceFromArg(*access_hosts)
+				if len(unity_access_hosts) != 0 {
+					res, create_err := unity_ds.CreateFSwithNFSExport(*vol_name, *pool_name, *nas_name, "", unity_access_hosts, unity_api.Gb_to_Bytes(*vol_size))
+					if create_err != nil {
+						log.Fatal(create_err)
+					}
+					fmt.Printf("Create volume with NFS share, name: %%d, volume name: %s\n", vol_size, vol_name)
+					fmt.Printf("Rest API responce: %s\n", res.RequestData)
 				}
-				fmt.Printf("Create volume with NFS share, name: %%d, volume name: %s\n", vol_size, vol_name)
-				fmt.Printf("Rest API responce: %s\n", res.RequestData)
+				log.Fatal("Empthy access hosts argument!!")
 			}
 			log.Fatal("You must give arguments: --pool-name, --nas-name,  --volume-name, --volume-size, --access-hosts !!!")
 		}
