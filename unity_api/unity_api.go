@@ -201,7 +201,7 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_name, nas_name,
 		log.Fatal(resp_err)
 	}
 	if !OKStatusCode(resp.StatusCode) {
-		return Resp{}, NewRestErr(respData, resp.StatusCode)
+		return Resp{RequestData: newFSJson, RespData: respData, StatusCode: resp.StatusCode}, NewRestErr(respData, resp.StatusCode)
 	}
 	return Resp{RequestData: newFSJson, RespData: respData, StatusCode: resp.StatusCode}, nil
 
@@ -226,7 +226,7 @@ func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) (Resp, error)
 	}
 	if !OKStatusCode(resp.StatusCode) {
 
-		return Resp{}, NewRestErr(respData, resp.StatusCode)
+		return Resp{RequestData: nil, RespData: respData, StatusCode: resp.StatusCode}, NewRestErr(respData, resp.StatusCode)
 	}
 	return Resp{RequestData: nil, RespData: respData, StatusCode: resp.StatusCode}, nil
 
