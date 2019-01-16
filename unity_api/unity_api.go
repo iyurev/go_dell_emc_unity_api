@@ -26,6 +26,7 @@ const defaultLocalPath = "/"
 type Resp struct {
 	RequestData []byte
 	RespData    []byte
+	StatusCode  int
 }
 
 type UnityDataStorRest struct {
@@ -202,7 +203,7 @@ func (unity *UnityDataStorRest) CreateFSwithNFSExport(name, pool_name, nas_name,
 	if !OKStatusCode(resp.StatusCode) {
 		return Resp{}, NewRestErr(respData, resp.StatusCode)
 	}
-	return Resp{RequestData: newFSJson, RespData: respData}, nil
+	return Resp{RequestData: newFSJson, RespData: respData, StatusCode: resp.StatusCode}, nil
 
 }
 
@@ -227,6 +228,6 @@ func (unity *UnityDataStorRest) DeleteFSwithNFSExport(name string) (Resp, error)
 
 		return Resp{}, NewRestErr(respData, resp.StatusCode)
 	}
-	return Resp{RequestData: nil, RespData: respData}, nil
+	return Resp{RequestData: nil, RespData: respData, StatusCode: resp.StatusCode}, nil
 
 }
