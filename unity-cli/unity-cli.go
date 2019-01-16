@@ -32,15 +32,15 @@ func sliceFromArg(arg string) []string {
 }
 
 func main() {
-	base_url := flag.String("--base_url", "", "Unity REST API Base URL")
-	username := flag.String("--username", "", "Unity REST API Username")
-	password := flag.String("--password", "", "Unity REST API Password")
-	pool_name := flag.String("--pool-name", "", "Storage pool name")
-	nas_name := flag.String("--nas-name", "", "NAS name")
-	vol_name := flag.String("--volume-name", "", "Volume name")
-	access_hosts := flag.String("--access-hosts", "", "Unity access hosts")
-	vol_size := flag.Int("--volume-size", 0, "Volume size in Gigabytes")
-	create_nfs_volume := flag.Bool("--create-nfs-volume", true, "Create Volume with NFS share")
+	username := flag.String("username", "", "Unity REST API Username")
+	base_url := flag.String("base-url", "", "Unity REST API Base URL")
+	password := flag.String("password", "", "Unity REST API Password")
+	pool_name := flag.String("pool-name", "", "Storage pool name")
+	nas_name := flag.String("nas-name", "", "NAS name")
+	vol_name := flag.String("volume-name", "", "Volume name")
+	access_hosts := flag.String("access-hosts", "", "Unity access hosts")
+	vol_size := flag.Int("volume-size", 0, "Volume size in Gigabytes")
+	create_nfs_volume := flag.Bool("create-nfs-volume", true, "Create Volume with NFS share")
 	flag.Parse()
 
 	if !emthyArg(base_url) && !emthyArg(username) && !emthyArg(password) {
@@ -56,15 +56,19 @@ func main() {
 					if create_err != nil {
 						log.Fatal(create_err)
 					}
-					fmt.Printf("Create volume with NFS share, name: %%d, volume name: %s\n", vol_size, vol_name)
+					fmt.Printf("Created volume with NFS share, volume name: %s, volume size: %d Gb\n", *vol_name, *vol_size)
 					fmt.Printf("Rest API responce: %s\n", res.RequestData)
+				} else {
+					log.Fatal("Empthy access hosts argument!!")
 				}
-				log.Fatal("Empthy access hosts argument!!")
+			} else {
+				log.Fatal("You must give arguments: --pool-name, --nas-name,  --volume-name, --volume-size, --access-hosts !!!")
 			}
-			log.Fatal("You must give arguments: --pool-name, --nas-name,  --volume-name, --volume-size, --access-hosts !!!")
+		} else {
+			log.Fatal("You must set least one action, --create-nfs-volume for example!!!")
 		}
-		log.Fatal("You must set least one action, --create-nfs-volume for example!!!")
+	} else {
+		log.Fatal("You must give credentials for REST API!!")
 	}
-	log.Fatal("You must give credentials for REST API!!")
 
 }
